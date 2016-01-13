@@ -12,8 +12,8 @@ import AVFoundation
 class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate {
     
     private var vo_videoOutput: AVCaptureMovieFileOutput! //ビデオアウトプット
-    private var sb_startButton: UIButton! //スタートボタン
-    private var sb_stopButton: UIButton! // ストップボタン
+    private var sb_startButton: UIButton = UIButton() //スタートボタン
+    private var sb_stopButton: UIButton = UIButton() // ストップボタン
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -21,39 +21,40 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate {
         let sh_screenHeight = self.view.frame.size.height
         
         let mySession: AVCaptureSession = AVCaptureSession() //セッションの作成
-        var myDevice: AVCaptureDevice = AVCaptureDevice() // デバイス
+        var cd_captureDevice: AVCaptureDevice! // デバイス
         let io_imageOutput: AVCaptureStillImageOutput = AVCaptureStillImageOutput() //出力先の生成
         let devices = AVCaptureDevice.devices() //デバイスの一覧
-//        let acd_audioCaptureDevice = AVCaptureDevice.devicesWithMediaType(AVMediaTypeAudio)
-//        let ai_audioInput = AVCaptureDeviceInput.deviceInputWithDevice(acd_audioCaptureDevice[0] as! AVCaptureDevice, error: nil) as! AVCaptureInput
+        let audioCaptureDevice = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo) //マイクの取得
         
         var ai_audioInput = AVCaptureDeviceInput()
         do {
-            let captureDevice = AVCaptureDevice.defaultDeviceWithMediaType(AVMediaTypeVideo) //マイクの取得
-            ai_audioInput = try AVCaptureDeviceInput(device: captureDevice) as AVCaptureDeviceInput //マイクをセッションのInputに追加
-            // Do the rest of your work...
+            ai_audioInput = try AVCaptureDeviceInput(device: audioCaptureDevice) //マイクをセッションのInputに追加
         } catch let error as NSError {
-            // Handle any errors
             print(error)
         }
 
-        // バックライトをmyDeviceに格納
+        // バックライトをcd_captureDeviceに格納
         for device in devices{
-            if (device.position == AVCaptureDevicePosition.Back){
-                myDevice = device as! AVCaptureDevice
+            if (device.hasMediaType(AVMediaTypeVideo)) {
+                if (device.position == AVCaptureDevicePosition.Back){
+                    cd_captureDevice = device as! AVCaptureDevice
+                }
             }
         }
-        
+
+        var vi_videoInput = AVCaptureDeviceInput()
         do {
-            let vi_videoInput = try AVCaptureDeviceInput(device: myDevice) // バックカメラの取得
-            mySession.addInput(vi_videoInput) //ビデオをセッションのInputに追加
+            vi_videoInput = try AVCaptureDeviceInput.init(device: cd_captureDevice) // バックカメラの取得
         } catch {
             print(error)
         }
         
-        
-        
-        mySession.addInput(ai_audioInput) //オーディオをセッションに追加
+        if mySession.canAddInput(ai_audioInput){
+            mySession.addInput(ai_audioInput) //オーディオをセッションのInputに追加
+        }
+        if mySession.canAddInput(vi_videoInput) {
+            mySession.addInput(vi_videoInput) //ビデオをセッションのInputに追加
+        }
         
         mySession.addOutput(io_imageOutput)//セッションに追加
         vo_videoOutput = AVCaptureMovieFileOutput() //動画の保存
@@ -84,20 +85,21 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate {
         sb_stopButton.layer.masksToBounds = true
         sb_stopButton.layer.cornerRadius = 20
         sb_stopButton.layer.position = CGPointMake(sw_screenWidth*3/4, sh_screenHeight-50)
-        sb_stopButton.addTarget(self, action: "onClickButton", forControlEvents: .TouchUpInside)
+        sb_stopButton.addTarget(self, action: "onClickButton:", forControlEvents: .TouchUpInside)
         self.view.addSubview(sb_stopButton)
      
         
     }
     
-    //　ボタンイヴェント
+    //　ボタンイべント
     internal func onClickButton(sender: UIButton) {
         // 撮影開始
-        if (sender == sb_startButton) {
+        if (sender == sb_startButton) {            
             let paths = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)
-            let documentsDictionary = paths[0] as! String
-            let filePath: String? = "\(documentsDictionary)test.mp4"
-            let fileURL: NSURL = NSURL(fileReferenceLiteral: filePath!)
+            
+            let documentsDirectory = paths[0] // フォルダ.
+            let filePath : String? = "\(documentsDirectory)/test.mp4" // ファイル名.
+            let fileURL : NSURL = NSURL(fileURLWithPath: filePath!) // URL.
             
             vo_videoOutput.startRecordingToOutputFileURL(fileURL, recordingDelegate: self) // 録画開始
         } else if (sender == sb_stopButton) {
