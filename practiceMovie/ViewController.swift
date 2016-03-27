@@ -8,6 +8,7 @@
 
 import UIKit
 import AVFoundation
+import AssetsLibrary
 
 class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate {
     
@@ -110,6 +111,9 @@ class ViewController: UIViewController, AVCaptureFileOutputRecordingDelegate {
     // 動画がキャプチャーされた後に呼ばれるメソッド.
     func captureOutput(captureOutput: AVCaptureFileOutput!, didFinishRecordingToOutputFileAtURL outputFileURL: NSURL!, fromConnections connections: [AnyObject]!, error: NSError!) {
         print("キャプチャー終了:didFinishRecordingToOutputFileAtURL")
+        
+        let assetsLib = ALAssetsLibrary()
+        assetsLib.writeVideoAtPathToSavedPhotosAlbum(outputFileURL, completionBlock: nil)
     }
     
     // 動画のキャプチャーが開始された時に呼ばれるメソッド.
